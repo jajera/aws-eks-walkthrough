@@ -18,10 +18,10 @@ hero:
 import { CardGrid } from '@astrojs/starlight/components';
 import CardWithIcon from '@/components/CardWithIcon.astro';
 import LinkCardWithIcon from '@/components/LinkCardWithIcon.astro';
-import IconMdiBookOpen from '~icons/mdi/book-open';
+import IconSiAmazonwebservices from '~icons/simple-icons/amazonwebservices';
 import IconMdiNetwork from '~icons/mdi/network';
-import IconMdiKubernetes from '~icons/mdi/kubernetes';
-import IconMdiLayers from '~icons/mdi/layers';
+import IconSiKubernetes from '~icons/simple-icons/kubernetes';
+import IconSiArgo from '~icons/simple-icons/argo';
 
 <CardGrid>
   <LinkCardWithIcon
@@ -29,7 +29,7 @@ import IconMdiLayers from '~icons/mdi/layers';
     href="/aws-eks-walkthrough/foundations/"
     description="Set up your environment and AWS account before anything else."
   >
-    <IconMdiBookOpen slot="icon" aria-hidden />
+    <IconSiAmazonwebservices slot="icon" aria-hidden />
   </LinkCardWithIcon>
   <LinkCardWithIcon
     title="Networking"
@@ -39,11 +39,11 @@ import IconMdiLayers from '~icons/mdi/layers';
     <IconMdiNetwork slot="icon" aria-hidden />
   </LinkCardWithIcon>
   <CardWithIcon title="Cluster">
-    <IconMdiKubernetes slot="icon" aria-hidden />
+    <IconSiKubernetes slot="icon" aria-hidden />
     Provision the EKS control plane and join managed node groups. Coming soon.
   </CardWithIcon>
   <CardWithIcon title="Platform">
-    <IconMdiLayers slot="icon" aria-hidden />
+    <IconSiArgo slot="icon" aria-hidden />
     Add-ons, ingress, observability, and GitOps with ArgoCD. Coming in a later batch.
   </CardWithIcon>
 </CardGrid>

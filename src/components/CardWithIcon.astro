@@ -44,10 +44,6 @@ const hasIconSlot = Astro.slots.has('icon');
 			--sl-card-bg: var(--sl-color-green-low);
 		}
 		.card:nth-child(4n + 4) {
-			--sl-card-border: var(--sl-color-red);
-			--sl-card-bg: var(--sl-color-red-low);
-		}
-		.card:nth-child(4n + 5) {
 			--sl-card-border: var(--sl-color-blue);
 			--sl-card-bg: var(--sl-color-blue-low);
 		}
@@ -78,6 +74,14 @@ const hasIconSlot = Astro.slots.has('icon');
 			width: 100%;
 			height: 100%;
 			flex-shrink: 0;
+			fill: var(--sl-card-border);
+		}
+		.card .icon :global(svg path),
+		.card .icon :global(svg circle) {
+			fill: var(--sl-card-border);
+		}
+		.card .icon :global(svg [stroke]) {
+			stroke: var(--sl-card-border);
 		}
 		.card .body {
 			margin: 0;
