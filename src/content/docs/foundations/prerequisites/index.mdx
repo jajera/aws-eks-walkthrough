@@ -1,0 +1,62 @@
+---
+title: Prerequisites
+description: Everything you need before creating any infrastructure — work through each area in order.
+sidebar:
+  label: Overview
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import Checklist from '@/components/Checklist.astro';
+
+<Checklist
+  id="prerequisites-overview"
+  items={[
+    'AWS account and admin or scoped access configured',
+    'IAM Identity Center enabled (optional; required for ArgoCD)',
+    'AWS CLI installed and configured',
+    'Terraform installed (>= 1.5)',
+    'kubectl installed',
+    'Git installed, user configured, and Terraform repo cloned',
+    'Region chosen, cost and teardown approach noted',
+  ]}
+/>
+
+Prerequisites are grouped into the same seven areas as the [Foundations overview](/aws-eks-walkthrough/foundations/). Work through them in order — later sections depend on earlier ones. Each page has detailed steps and uses tabs for macOS vs Linux or IAM user vs IAM Identity Center where choices exist.
+
+<CardGrid>
+  <LinkCard
+    title="AWS account"
+    description="Create or use an AWS account, enable MFA, and choose your region."
+    href="/aws-eks-walkthrough/foundations/prerequisites/aws-account/"
+  />
+  <LinkCard
+    title="IAM Identity Center"
+    description="Enable centralised access and short-lived credentials. Required for ArgoCD."
+    href="/aws-eks-walkthrough/foundations/prerequisites/iam-identity-center/"
+  />
+  <LinkCard
+    title="AWS CLI"
+    description="Install the CLI and configure access — IAM user keys or SSO."
+    href="/aws-eks-walkthrough/foundations/prerequisites/aws-cli/"
+  />
+  <LinkCard
+    title="Terraform"
+    description="Install Terraform and understand the repo and state approach."
+    href="/aws-eks-walkthrough/foundations/prerequisites/terraform/"
+  />
+  <LinkCard
+    title="kubectl"
+    description="Install the Kubernetes CLI. Kubeconfig is set up after the cluster exists."
+    href="/aws-eks-walkthrough/foundations/prerequisites/kubectl/"
+  />
+  <LinkCard
+    title="Git"
+    description="Install Git, set your identity, and clone the Terraform repo."
+    href="/aws-eks-walkthrough/foundations/prerequisites/git/"
+  />
+  <LinkCard
+    title="What else"
+    description="Region, Terraform state, cost warnings, and teardown reminder."
+    href="/aws-eks-walkthrough/foundations/prerequisites/what-else/"
+  />
+</CardGrid>

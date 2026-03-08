@@ -1,0 +1,71 @@
+---
+title: Add-ons
+description: EKS managed add-ons and platform components deployed via ArgoCD.
+draft: true
+sidebar:
+  label: Add-ons
+---
+
+import { Aside, Steps, FileTree, Badge } from '@astrojs/starlight/components';
+import Checklist from '@/components/Checklist.astro';
+import Tooltip from '@/components/Tooltip.astro';
+
+<Aside type="note">
+  Platform manifests live in [aws-eks-platform](https://github.com/jajera/aws-eks-platform).
+  Clone that repo and follow along — it uses an ArgoCD app-of-apps pattern to deploy
+  all platform components from a single bootstrap.
+</Aside>
+
+<Checklist
+  id="platform-addons"
+  items={[
+    'ArgoCD installed and accessible',
+    'VPC CNI add-on configured',
+    'CoreDNS add-on configured',
+    'kube-proxy add-on configured',
+    'AWS Load Balancer Controller deployed',
+    'EBS CSI Driver deployed',
+  ]}
+/>
+
+## Overview
+
+Platform components are deployed through <Tooltip term="argocd" /> using a GitOps
+app-of-apps pattern. The platform repo structure mirrors a battle-tested layout:
+
+## Repository layout
+
+<FileTree>
+- bootstrap/
+  - **bootstrap.sh** Installs ArgoCD and applies the root app
+  - argocd-install.yaml
+  - argocd-values.yaml
+  - root-eks.yaml Root ApplicationSet
+- clusters/
+  - eks/
+    - infrastructure.yaml
+    - platform-apps.yaml
+- infrastructure/
+  - aws-load-balancer-controller/
+  - aws-ebs-csi-driver/
+  - external-dns/
+  - cert-manager/
+</FileTree>
+
+## Steps
+
+<Steps>
+
+1. **Bootstrap ArgoCD.** <Badge text="Required" variant="tip" size="small" />
+
+   Content to follow in the platform batch.
+
+2. **Apply EKS managed add-ons.** <Badge text="Required" variant="tip" size="small" />
+
+   Content to follow in the platform batch.
+
+3. **Deploy infrastructure components.** <Badge text="Required" variant="tip" size="small" />
+
+   Content to follow in the platform batch.
+
+</Steps>

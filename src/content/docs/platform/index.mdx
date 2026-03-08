@@ -1,0 +1,26 @@
+---
+title: Platform
+description: Add-ons, ingress, observability, and GitOps with ArgoCD.
+draft: true
+sidebar:
+  label: Overview
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+This batch covers the platform layer — everything that runs on top of the bare cluster
+to make it production-ready.
+
+<Aside type="note">
+  This batch is planned for a later release. Check back after the Cluster batch is published.
+  Platform manifests will live in a dedicated GitOps repository:
+  [aws-eks-platform](https://github.com/jajera/aws-eks-platform).
+</Aside>
+
+<CardGrid>
+  <LinkCard
+    title="Add-ons"
+    href="/aws-eks-walkthrough/platform/addons/"
+    description="EKS managed add-ons and cluster essentials."
+  />
+</CardGrid>

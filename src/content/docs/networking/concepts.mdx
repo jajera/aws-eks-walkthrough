@@ -1,0 +1,249 @@
+---
+title: Networking concepts
+description: VPC basics, subnets, availability zones, VPC CNI IP planning, security groups, endpoint access modes, and everything EKS needs from the network — before you build anything.
+sidebar:
+  label: Concepts
+---
+
+import { Aside, Badge } from '@astrojs/starlight/components';
+import Tooltip from '@/components/Tooltip.astro';
+import VpcDiagram from '@/components/VpcDiagram.astro';
+import TrafficFlowDiagram from '@/components/TrafficFlowDiagram.astro';
+import VpcAzDiagram from '@/components/VpcAzDiagram.astro';
+import VpcClusterTagsDiagram from '@/components/VpcClusterTagsDiagram.astro';
+
+This page covers the networking concepts you need before building the VPC. Read this first; then go to [VPC](/aws-eks-walkthrough/networking/vpc/) to build it with Terraform.
+
+## VPC basics
+
+A <Tooltip term="vpc" /> is an isolated, private network in AWS. Every resource in this walkthrough — EKS control plane ENIs, worker nodes, load balancers — lives inside this VPC. By default, nothing inside is reachable from the internet unless you explicitly configure it.
+
+**Why it matters for EKS.** The EKS control plane places network interfaces into the subnets you choose. Node groups launch EC2 instances into those same subnets. If the layout is wrong — wrong subnet, missing tag, DNS disabled — nodes fail to join and load balancers fail to provision, often with cryptic errors.
+
+**CIDR.** Every VPC has a primary <Tooltip term="cidr" /> block that defines its total address space. A common choice is `10.0.0.0/16`, which gives 65,536 IP addresses. Subnets are carved out of this block — each subnet uses a smaller range (e.g. `10.0.1.0/24`). You do not need to learn binary subnet math for this walkthrough; just understand that the VPC CIDR is the parent block and subnets are slices of it.
+
+**DNS in the VPC.** Two VPC settings must both be `true` for EKS to work:
+
+- `enable_dns_support` — allows the VPC's built-in DNS resolver to answer queries.
+- `enable_dns_hostnames` — gives EC2 instances (and EKS nodes) public DNS hostnames.
+
+Without `enable_dns_hostnames`, nodes cannot resolve the EKS API server endpoint by hostname and will fail to join the cluster.
+
+<VpcDiagram />
+
+---
+
+## Subnets
+
+A subnet is a segment of the VPC's CIDR block, tied to a single <Tooltip term="az" />. Every resource you launch — an EC2 instance, a NAT Gateway — is placed in a specific subnet, which determines its AZ and routing behaviour.
+
+### Public vs private
+
+|                   | Public subnet                             | Private subnet                                                |
+| ----------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| Route to internet | Yes — via <Tooltip term="igw" />          | No direct route                                               |
+| Outbound internet | Direct                                    | Via <Tooltip term="nat" />                                    |
+| What goes here    | NAT Gateway, public LBs, optional bastion | EKS nodes, pods, internal LBs                                 |
+| IP addresses      | Fewer needed                              | Many needed (see [VPC CNI](#vpc-cni-and-ip-address-planning)) |
+
+**Public subnets** have a route table entry `0.0.0.0/0 → Internet Gateway`. Resources in a public subnet can receive inbound traffic from the internet (if their security group allows it).
+
+**Private subnets** have a route table entry `0.0.0.0/0 → NAT Gateway`. They can initiate outbound connections (e.g. pulling a container image from ECR) but are not directly reachable from the internet.
+
+**For EKS:** nodes run in private subnets. The NAT Gateway sits in a public subnet and provides outbound internet access for the nodes. Public-facing load balancers are provisioned in public subnets; internal load balancers are provisioned in private subnets.
+
+### Traffic flow
+
+<TrafficFlowDiagram />
+
+Route tables make this explicit:
+
+- **Public route table:** `0.0.0.0/0 → igw-xxxxxxxx`
+- **Private route table:** `0.0.0.0/0 → nat-xxxxxxxx`
+
+Each subnet is associated with exactly one route table.
+
+---
+
+## Availability Zones
+
+An <Tooltip term="az" /> is an isolated data-centre location within an AWS region. Subnets are bound to a single AZ; you cannot span a subnet across multiple AZs.
+
+**Why multiple AZs for EKS.** The EKS control plane is managed by AWS and is inherently multi-AZ. Your worker nodes are not — they run in the AZs where you put subnets. Spreading nodes across multiple AZs means a single AZ failure does not take down all of your workloads.
+
+**Our subnets.** This walkthrough uses three Availability Zones; one public and one private subnet per AZ, all `/24`:
+
+| AZ              | Public subnet | Private subnet |
+| --------------- | ------------- | -------------- |
+| ap-southeast-6a | 10.0.0.0/24   | 10.0.3.0/24    |
+| ap-southeast-6b | 10.0.1.0/24   | 10.0.4.0/24    |
+| ap-southeast-6c | 10.0.2.0/24   | 10.0.5.0/24    |
+
+<VpcAzDiagram />
+
+---
+
+## EKS subnet tags and DNS
+
+EKS and the AWS Load Balancer Controller use **tags** to discover which subnets they can use for load balancers and auto-scaling. Without the right tags, load balancers fail to provision and EKS may not schedule pods onto nodes correctly.
+
+### Required tags
+
+| Tag                                    | Value               | Where                | Purpose                                                                                                                    |
+| -------------------------------------- | ------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `kubernetes.io/cluster/<cluster-name>` | `shared` or `owned` | All subnets          | Tells EKS the subnet belongs to this cluster. `shared` = multiple clusters may use it; `owned` = this cluster exclusively. |
+| `kubernetes.io/role/elb`               | `1`                 | Public subnets only  | Marks where public-facing load balancers can be created.                                                                   |
+| `kubernetes.io/role/internal-elb`      | `1`                 | Private subnets only | Marks where internal load balancers can be created.                                                                        |
+
+<Aside type="caution" title="Missing cluster tag">
+  The `kubernetes.io/cluster/<cluster-name>` tag is required on **all** subnets that EKS should consider. Omitting it means the AWS Load Balancer Controller cannot find your subnets and will fail silently. The `role/elb` and `role/internal-elb` tags are checked **in addition to** the cluster tag, not instead of it.
+</Aside>
+
+### Tag layout at a glance
+
+<VpcClusterTagsDiagram />
+
+### DNS
+
+The VPC must have DNS hostnames enabled so EKS nodes can resolve `<cluster-endpoint>.eks.amazonaws.com` to an IP address. This was mentioned in [VPC basics](#vpc-basics); it is repeated here because it is the most common EKS networking gotcha — a cluster will provision but nodes will fail to join if DNS hostnames is off.
+
+---
+
+## VPC CNI and IP address planning
+
+<Aside type="caution" title="Plan subnet sizes before you create them">
+  You cannot expand a subnet's CIDR block after it is created. Get this right now.
+</Aside>
+
+EKS uses the **AWS VPC CNI plugin** (`aws-node`) as the default container network interface. Unlike many other Kubernetes CNI plugins, the AWS VPC CNI does **not** use an IP overlay. Instead, every pod receives a **real VPC IP address** from the subnet where its node is running.
+
+This has a direct impact on how many IP addresses your private subnets need.
+
+### How the ENI warm pool works
+
+When a node starts, the VPC CNI allocates secondary IP addresses in advance — before any pods are scheduled — and holds them in a warm pool so pods can start without waiting for IP allocation. The number of IPs a node can hold depends on the instance type:
+
+- Each instance type has a maximum number of ENIs it can attach.
+- Each ENI can hold a maximum number of secondary private IP addresses.
+- The VPC CNI uses both to maximise the pod IP pool.
+
+**Example — `m5.xlarge`:**
+
+```
+m5.xlarge supports 4 ENIs × 15 IPs per ENI = 60 IPs total
+Minus 1 primary IP per ENI = 56 usable pod IPs (max)
+```
+
+The warm pool pre-allocates these from the subnet before pods run:
+
+```
+Node (m5.xlarge)
+├── ENI 0  (primary)   → 1 primary IP + 14 secondary (pod IPs)
+├── ENI 1  (secondary) → 1 primary IP + 14 secondary (pod IPs)
+├── ENI 2  (secondary) → 1 primary IP + 14 secondary (pod IPs)
+└── ENI 3  (secondary) → 1 primary IP + 14 secondary (pod IPs)
+                                             ↑
+                        All drawn from the private subnet
+```
+
+### Sizing private subnets
+
+| Subnet size | Usable IPs | Notes                                                                                                               |
+| ----------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `/24`       | 251        | Used in this walkthrough (matches the diagram); fine for small clusters. One large node can pre-allocate 30–60 IPs. |
+| `/22`       | 1,022      | Consider for larger clusters                                                                                        |
+| `/20`       | 4,094      | Comfortable for clusters with many or large nodes                                                                   |
+| `/18`       | 16,382     | Large production clusters                                                                                           |
+
+**Public subnets** only need IPs for NAT Gateway (1 IP), Load Balancer ENIs (a handful), and optional bastion hosts. A `/24` is fine for public subnets.
+
+**This walkthrough:** private subnets are `/24` (as in the diagram). For production clusters with many nodes, consider `/22` or `/20`.
+
+<Aside type="tip">
+  AWS ENI limits by instance type: [docs.aws.amazon.com — IP addresses per network
+  interface](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#AvailableIpPerENI).
+</Aside>
+
+---
+
+## Security Groups for EKS
+
+<Tooltip term="sg">Security Groups</Tooltip> control inbound and outbound traffic at the
+instance/ENI level. EKS creates and manages some security groups automatically; you create others.
+
+### Cluster security group (auto-created)
+
+When you create an EKS cluster, AWS automatically creates a **cluster security group** and attaches it to:
+
+- The control plane's cross-account ENIs (the ENIs EKS places in your VPC to communicate with nodes).
+- Every managed node group you create (by default).
+
+This SG allows all traffic between nodes and the control plane on the ports Kubernetes requires (TCP 443 for API, TCP 10250 for kubelet, and the ephemeral port range for return traffic). You do not manage it directly.
+
+### Additional node security group (common)
+
+Most setups add an extra security group to nodes for application-level rules — for example, allowing external HTTP/S to a node port for testing, or restricting which resources can reach a database running on a node. This SG is passed into the `aws_eks_node_group` resource or the EC2 launch template.
+
+### Why the node SG matters for this page
+
+If any security group attached to a node blocks traffic from the control plane on TCP 443 or TCP 10250, **the node will silently fail to join the cluster**. This is a networking problem, not an IAM problem, and it is one of the most common causes of "no nodes appear in `kubectl get nodes`."
+
+The VPC module in this walkthrough does not create node security groups (those are created with the cluster), but understanding the role of SGs here helps you debug if nodes do not register.
+
+### Security Groups for Pods (SGPP) — advanced
+
+EKS supports assigning a VPC security group **directly to a Kubernetes pod** — not just to the node. This is called Security Groups for Pods (SGPP) and is useful when you need fine-grained control over which pods can reach a specific database or service. SGPP requires trunk ENIs and is not enabled by default.
+
+This walkthrough does not configure SGPP. It is covered in a later batch focused on workload security.
+
+---
+
+## EKS API endpoint access modes
+
+The EKS control plane exposes a Kubernetes API endpoint. You choose whether `kubectl` (and your CI/CD pipelines) can reach it from the public internet, only from inside the VPC, or both.
+
+### Three modes
+
+| Mode                 | `kubectl` from outside VPC | Node ↔ control plane | Use case               |
+| -------------------- | -------------------------- | -------------------- | ---------------------- |
+| **Public only**      | Yes (public hostname)      | Via internet         | Dev / learning         |
+| **Private only**     | No — must be inside VPC    | Stays in VPC         | Strict production      |
+| **Public + Private** | Yes (public hostname)      | Stays in VPC         | Most production setups |
+
+### Recommended: Public + Private
+
+With **Public + Private**, `kubectl` from your laptop hits the public hostname, but node-to-control-plane traffic is routed through a private endpoint inside your VPC — it never leaves the AWS network. This is the most common production pattern because it balances developer convenience with secure internal routing.
+
+**This walkthrough uses Public + Private.** Switch to Private only if you later add a VPN or AWS Direct Connect to your VPC.
+
+---
+
+## VPC Endpoints (optional hardening)
+
+<Aside type="tip">
+  This section describes an optional optimisation. Skip it for the initial build; come back when you
+  want to reduce NAT Gateway costs or lock down networking.
+</Aside>
+
+Without VPC Endpoints, traffic from private subnets to AWS services (S3, ECR, STS) exits via the NAT Gateway — incurring per-GB data transfer costs and routing through the public internet (even though within AWS infrastructure).
+
+VPC Endpoints create a private connection between your VPC and an AWS service, bypassing the NAT Gateway entirely.
+
+### Common endpoints for EKS
+
+| Endpoint                         | Type      | Cost | Why EKS needs it                                        |
+| -------------------------------- | --------- | ---- | ------------------------------------------------------- |
+| `com.amazonaws.<region>.s3`      | Gateway   | Free | Node bootstrap scripts and Fargate pull from S3         |
+| `com.amazonaws.<region>.ecr.api` | Interface | Paid | ECR API calls (list images, get auth token)             |
+| `com.amazonaws.<region>.ecr.dkr` | Interface | Paid | Container image pulls from ECR                          |
+| `com.amazonaws.<region>.sts`     | Interface | Paid | Required for IRSA token exchange in private-only setups |
+
+Gateway endpoints (S3) are free and have no reason not to add once the cluster is running. Interface endpoints cost roughly $0.01/hour each — worth it for production clusters where ECR traffic through NAT would be significant.
+
+---
+
+## What's next
+
+You now have the networking concepts needed to understand every Terraform resource in the build.
+
+Continue to [VPC](/aws-eks-walkthrough/networking/vpc/) to create the VPC, subnets, NAT Gateway, route tables, and EKS subnet tags using Terraform.

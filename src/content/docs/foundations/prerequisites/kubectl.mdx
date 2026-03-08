@@ -1,0 +1,96 @@
+---
+title: kubectl
+description: Install kubectl — the Kubernetes CLI you will use to inspect and manage the EKS cluster after it is provisioned.
+sidebar:
+  label: kubectl
+---
+
+import { Steps, Aside, Tabs, TabItem, Badge } from '@astrojs/starlight/components';
+import Checklist from '@/components/Checklist.astro';
+import Tooltip from '@/components/Tooltip.astro';
+
+<Checklist
+  id="prereq-kubectl"
+  items={[
+    'kubectl installed',
+    'kubectl version --client returns expected output',
+  ]}
+/>
+
+<Tooltip term="kubectl" /> is the standard CLI for any Kubernetes cluster. After the <Tooltip term="eks" /> cluster is created in the Cluster batch, you'll use it to verify the control plane, list nodes, inspect pods, and (in later batches) deploy workloads.
+
+EKS doesn't replace kubectl — AWS gives you a managed control plane; kubectl remains your primary interface to the cluster.
+
+<Aside type="note">
+  Your kubeconfig is not set up here. It's populated in the Cluster batch by running `aws eks update-kubeconfig`. No further kubectl setup is needed until then.
+</Aside>
+
+<Steps>
+
+1. **Install kubectl.** <Badge text="Required" variant="tip" size="small" />
+
+   Install a version of kubectl that is within one minor version of the Kubernetes version your EKS cluster will run. The latest stable release is always safe to install now.
+
+   <Tabs syncKey="os">
+     <TabItem label="macOS">
+      ```bash frame="terminal" title="Install via Homebrew"
+      brew install kubectl
+      ```
+
+      Or, install a specific version:
+
+      ```bash frame="terminal"
+      brew install kubernetes-cli
+      ```
+     </TabItem>
+     <TabItem label="Linux">
+      If `curl` is not installed, install it first (e.g. `sudo apt install -y curl` or `sudo dnf install -y curl`).
+
+      Download the latest stable release binary:
+
+      ```bash frame="terminal" title="Download and install kubectl"
+      curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+      rm kubectl
+      ```
+
+      For ARM:
+
+      ```bash frame="terminal"
+      curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+      sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+      rm kubectl
+      ```
+     </TabItem>
+   </Tabs>
+
+2. **Verify the installation.**
+
+   ```bash frame="terminal"
+   kubectl version --client
+   ```
+
+   Expected output (version numbers will differ):
+
+   ```
+   Client Version: v1.30.x
+   Kustomize Version: v5.x.x
+   ```
+
+   The **client** version is all that matters here. The server version will be shown once a cluster exists and kubeconfig is configured.
+
+3. **Note: kubeconfig is set up in the Cluster batch.**
+
+   When you reach the Cluster batch, you'll run:
+
+   ```bash frame="terminal"
+   aws eks update-kubeconfig --region <your-region> --name <cluster-name>
+   ```
+
+   This writes a kubeconfig entry for the EKS cluster into `~/.kube/config`. After that, standard kubectl commands like `kubectl get nodes` will work against your cluster.
+
+</Steps>
+
+## Next step
+
+Continue to [Git](/aws-eks-walkthrough/foundations/prerequisites/git/) to install Git, set your identity, and clone the Terraform repo.

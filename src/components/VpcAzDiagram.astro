@@ -1,0 +1,10 @@
+---
+/**
+ * Inlines the VPC/AZ subnet layout SVG so page CSS can target it for dark mode.
+ */
+import azSvg from '@/assets/networking/eks-vpc-az.svg?raw';
+---
+
+<div class="theme-aware-diagram not-content" role="img" aria-label="VPC subnets across availability zones A, B, and C with public and private CIDRs">
+  <Fragment set:html={azSvg} />
+</div>

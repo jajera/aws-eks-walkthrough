@@ -1,0 +1,49 @@
+---
+title: AWS EKS Walkthrough
+description: Build Amazon EKS from scratch — VPC, networking, cluster, and platform components.
+template: splash
+hero:
+  tagline: A hands-on, step-by-step guide to deploying Amazon EKS from the ground up. Published in batches — start early, follow along, and come back as more arrives.
+  actions:
+    - text: Get started
+      link: /aws-eks-walkthrough/foundations/
+      variant: primary
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/jajera/aws-eks-walkthrough
+      variant: secondary
+      icon: github
+---
+
+import { CardGrid } from '@astrojs/starlight/components';
+import CardWithIcon from '@/components/CardWithIcon.astro';
+import LinkCardWithIcon from '@/components/LinkCardWithIcon.astro';
+import IconMdiBookOpen from '~icons/mdi/book-open';
+import IconMdiNetwork from '~icons/mdi/network';
+import IconMdiKubernetes from '~icons/mdi/kubernetes';
+import IconMdiLayers from '~icons/mdi/layers';
+
+<CardGrid>
+  <LinkCardWithIcon
+    title="Foundations"
+    href="/aws-eks-walkthrough/foundations/"
+    description="Set up your environment and AWS account before anything else."
+  >
+    <IconMdiBookOpen slot="icon" aria-hidden />
+  </LinkCardWithIcon>
+  <LinkCardWithIcon
+    title="Networking"
+    href="/aws-eks-walkthrough/networking/"
+    description="Build the VPC, subnets, and NAT gateway that EKS will run inside."
+  >
+    <IconMdiNetwork slot="icon" aria-hidden />
+  </LinkCardWithIcon>
+  <CardWithIcon title="Cluster">
+    <IconMdiKubernetes slot="icon" aria-hidden />
+    Provision the EKS control plane and join managed node groups. Coming soon.
+  </CardWithIcon>
+  <CardWithIcon title="Platform">
+    <IconMdiLayers slot="icon" aria-hidden />
+    Add-ons, ingress, observability, and GitOps with ArgoCD. Coming in a later batch.
+  </CardWithIcon>
+</CardGrid>

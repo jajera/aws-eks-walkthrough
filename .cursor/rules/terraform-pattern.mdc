@@ -1,0 +1,96 @@
+---
+description: Conventions for referencing and describing Terraform infrastructure in the EKS walkthrough docs.
+globs:
+  - "src/content/docs/**/*.mdx"
+alwaysApply: false
+---
+
+# Terraform Pattern
+
+## Repo separation
+
+The walkthrough docs (`aws-eks-walkthrough`) never contain Terraform code. All infrastructure lives in dedicated external repos:
+
+| Repo | Purpose |
+| ---- | ------- |
+| `aws-eks-terraform` | Terraform modules and walkthrough entry point |
+| `aws-eks-platform` | ArgoCD/GitOps manifests (platform batch, future) |
+
+## Expected Terraform repo layout
+
+When documenting or referencing `aws-eks-terraform`, assume this structure:
+
+```plaintext
+aws-eks-terraform/
+├── modules/
+│   ├── vpc/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── eks/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   └── platform/        # future
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+└── walkthrough/
+    ├── main.tf           # calls modules in order
+    ├── variables.tf
+    ├── outputs.tf
+    └── terraform.tfvars.example   # always present; never commit .tfvars
+```
+
+## Module conventions
+
+- Each module has exactly: `main.tf`, `variables.tf`, `outputs.tf`.
+- No `terraform.tfstate` or `.tfvars` files inside `modules/`.
+- Variables use `description` and `type` on every declaration.
+- Outputs expose the IDs and ARNs consumed by the next module.
+- Tags are always passed via a `var.tags` map and merged with a `Name` tag.
+
+## Naming conventions
+
+- Resources: `<module>_<resource_type>` (e.g. `aws_vpc.main`, `aws_subnet.private`).
+- Variables and outputs: snake_case, descriptive (e.g. `private_subnet_ids`, `cluster_endpoint`).
+- Workspace entry point lives in `walkthrough/`, not at the repo root.
+
+## terraform.tfvars.example
+
+Every `walkthrough/` folder must contain a `terraform.tfvars.example` file with all required variables and placeholder values. Readers copy it to `terraform.tfvars` before running `terraform apply`.
+
+## Documenting Terraform steps in the walkthrough
+
+1. Show the relevant HCL in a code block with `title="modules/<section>/main.tf"`.
+2. Use line highlighting `{line}` to draw attention to key settings.
+3. Show `terraform init` then `terraform apply` in terminal code blocks.
+4. Show verification with both a Terraform output tab and an AWS CLI tab inside `<Tabs syncKey="tool">`.
+
+## ArgoCD / GitOps repo (future — platform batch)
+
+When the platform batch is written, reference `aws-eks-platform` which follows a layout like:
+
+```plaintext
+aws-eks-platform/
+├── bootstrap/
+│   ├── bootstrap.sh
+│   ├── argocd-install.yaml
+│   ├── argocd-values.yaml
+│   └── root-eks.yaml
+├── clusters/
+│   └── eks/
+│       ├── infrastructure.yaml
+│       └── platform-apps.yaml
+└── infrastructure/
+    ├── aws-load-balancer-controller/
+    ├── aws-ebs-csi-driver/
+    ├── external-dns/
+    └── cert-manager/
+```
+
+Update this rule when the platform repo is created.
+
+---
+
+_Update this rule when a new convention is adopted._

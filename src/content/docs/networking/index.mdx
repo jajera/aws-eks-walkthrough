@@ -1,0 +1,25 @@
+---
+title: Networking
+description: VPC, subnets, and NAT gateway for the EKS cluster.
+sidebar:
+  label: Overview
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+This batch covers the network foundation that EKS runs inside.
+Start with the concepts — VPC, subnets, availability zones, IP planning — then build the VPC with Terraform.
+Every resource in later batches depends on this being correct.
+
+<CardGrid>
+  <LinkCard
+    title="Networking concepts"
+    href="/aws-eks-walkthrough/networking/concepts/"
+    description="VPC basics, subnets, AZs, VPC CNI IP planning, security groups, endpoint access modes, and what EKS needs from the network."
+  />
+  <LinkCard
+    title="VPC"
+    href="/aws-eks-walkthrough/networking/vpc/"
+    description="Create the VPC, public and private subnets, NAT gateway, route tables, and EKS subnet tags."
+  />
+</CardGrid>

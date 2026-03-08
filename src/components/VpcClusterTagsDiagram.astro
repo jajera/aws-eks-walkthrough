@@ -1,0 +1,10 @@
+---
+/**
+ * Inlines the EKS subnet cluster tags SVG so page CSS can target it for dark mode.
+ */
+import tagsSvg from '@/assets/networking/eks-vpc-cluster-tags.svg?raw';
+---
+
+<div class="theme-aware-diagram not-content" role="img" aria-label="EKS subnet tags: public subnet role/elb, private subnet role/internal-elb, cluster tag on both">
+  <Fragment set:html={tagsSvg} />
+</div>
