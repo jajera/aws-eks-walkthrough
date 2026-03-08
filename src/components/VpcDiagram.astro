@@ -1,0 +1,11 @@
+---
+/**
+ * Inlines the VPC/subnet layout SVG so page CSS can target it for dark mode.
+ * Use in docs instead of <Image> when the SVG must respect data-theme.
+ */
+import vpcSvg from '@/assets/networking/eks-vpc-subnet-layout.svg?raw';
+---
+
+<div class="theme-aware-diagram not-content" role="img" aria-label="VPC with CIDR block, DNS settings, and public and private subnets across availability zones">
+  <Fragment set:html={vpcSvg} />
+</div>

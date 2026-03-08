@@ -1,0 +1,117 @@
+---
+title: What Else to Have in Mind
+description: Region, Terraform state strategy, cost expectations, and teardown reminder before you start creating infrastructure.
+sidebar:
+  label: What Else
+---
+
+import { Aside, Badge } from '@astrojs/starlight/components';
+import Checklist from '@/components/Checklist.astro';
+import Tooltip from '@/components/Tooltip.astro';
+
+<Checklist
+  id="prereq-what-else"
+  items={[
+    'Default AWS region confirmed and set in CLI and Terraform',
+    'Terraform state strategy understood (local for this walkthrough)',
+    'Cost expectations noted and billing alert configured',
+    'Teardown approach understood (terraform destroy)',
+  ]}
+/>
+
+Before creating any infrastructure, take five minutes to confirm a few things that affect every step that follows. These aren't "nice to have" — a wrong region or forgotten teardown can cause confusing errors or unexpected charges.
+
+## Region
+
+Use **one AWS region** for the entire walkthrough. Every resource — VPC, subnets, EKS cluster, node groups, IAM roles — must be in the same region. Mixing regions causes routing issues and authentication failures.
+
+**How to set the default region:**
+
+For IAM user credentials (`aws configure`):
+
+```bash frame="terminal"
+aws configure set region ap-southeast-6
+```
+
+For SSO (set it in your profile config, e.g. `~/.aws/config`):
+
+```ini title="~/.aws/config"
+[profile eks-walkthrough]
+sso_start_url = https://d-xxxxxxxxxx.awsapps.com/start
+sso_region = ap-southeast-6
+sso_account_id = 123456789012
+sso_role_name = AdministratorAccess
+region = ap-southeast-6
+output = json
+```
+
+Terraform reads the region from the AWS provider config or from the `AWS_REGION` environment variable:
+
+```bash frame="terminal"
+export AWS_REGION=ap-southeast-6
+```
+
+Or set it in `terraform.tfvars` in the Terraform repo (the repo's README explains how).
+
+**This walkthrough uses:** `ap-southeast-6` (AWS Asia Pacific — New Zealand).
+
+<Aside type="note">
+  Not all EC2 instance types are available in every region. If you hit an "instance type not supported" error, try a different instance type within `ap-southeast-6`.
+</Aside>
+
+## Terraform state
+
+This walkthrough uses **local state** — Terraform writes `terraform.tfstate` to the directory where you run commands. This is the simplest setup and works fine for a solo walkthrough.
+
+**Why local state is fine here:**
+
+- You're the only person running Terraform
+- The state file lives in the cloned repo directory on your machine
+- No S3 bucket or DynamoDB table to set up
+
+**When to move to remote state (later):**
+
+If you continue using this setup for real workloads, or if multiple people or CI need to run Terraform, switch to a remote backend. A common pattern for AWS:
+
+```hcl title="backend.tf (not needed now)"
+terraform {
+  backend "s3" {
+    bucket         = "my-terraform-state"
+    key            = "eks/terraform.tfstate"
+    region         = "ap-southeast-6"
+    dynamodb_table = "terraform-state-lock"
+  }
+}
+```
+
+This is **not required** for the walkthrough. A later batch may revisit remote state if you productionise.
+
+## Cost
+
+The resources created in this walkthrough are **not free tier**. Approximate cost while running:
+
+| Resource | Approximate cost |
+| -------- | ---------------- |
+| EKS control plane | ~$0.10 / hour |
+| NAT Gateway | ~$0.045 / hour + data transfer |
+| EC2 node group (2× t3.medium) | ~$0.08 / hour per node |
+| **Total (rough estimate)** | **~$5–10 / day** |
+
+<Aside type="caution" title="Cost and cleanup">
+  Always run `terraform destroy` when you finish a session. EKS, NAT gateways, and nodes continue to bill while running — even if you're not using them. Check the [AWS Billing console](https://console.aws.amazon.com/billing/) if unsure what's running.
+
+  ```bash frame="terminal" title="Tear down all resources"
+  cd ~/workspace/aws-eks-terraform/walkthrough
+  terraform destroy
+  ```
+</Aside>
+
+To avoid surprise charges:
+
+- Set a billing alert (covered in the [AWS Account](/aws-eks-walkthrough/foundations/prerequisites/aws-account/) step)
+- Run `terraform destroy` at the end of each session
+- Check the EC2 and EKS dashboards in the Console after destroying to confirm nothing is left running
+
+## You're ready
+
+Prerequisites are complete. Continue to the **Networking** batch to build the VPC that the EKS cluster will run inside.

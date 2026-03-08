@@ -1,0 +1,20 @@
+
+export default new Map([
+["src/content/docs/cluster/eks-setup.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fcluster%2Feks-setup.mdx&astroContentModuleFlag=true")],
+["src/content/docs/index.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Findex.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/index.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Findex.mdx&astroContentModuleFlag=true")],
+["src/content/docs/cluster/index.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fcluster%2Findex.mdx&astroContentModuleFlag=true")],
+["src/content/docs/platform/addons.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fplatform%2Faddons.mdx&astroContentModuleFlag=true")],
+["src/content/docs/platform/index.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fplatform%2Findex.mdx&astroContentModuleFlag=true")],
+["src/content/docs/networking/concepts.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fnetworking%2Fconcepts.mdx&astroContentModuleFlag=true")],
+["src/content/docs/networking/index.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fnetworking%2Findex.mdx&astroContentModuleFlag=true")],
+["src/content/docs/networking/vpc.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fnetworking%2Fvpc.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/aws-account.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Faws-account.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/aws-cli.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Faws-cli.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/git.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Fgit.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/iam-identity-center.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Fiam-identity-center.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/index.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Findex.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/kubectl.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Fkubectl.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/what-else.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Fwhat-else.mdx&astroContentModuleFlag=true")],
+["src/content/docs/foundations/prerequisites/terraform.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ffoundations%2Fprerequisites%2Fterraform.mdx&astroContentModuleFlag=true")]]);
+		

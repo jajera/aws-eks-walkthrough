@@ -1,0 +1,156 @@
+---
+title: Foundations
+description: What you need before getting started with the EKS walkthrough, and why we chose each option.
+sidebar:
+  label: Overview
+---
+
+import { CardGrid, LinkCard, Badge, Aside } from '@astrojs/starlight/components';
+import Tooltip from '@/components/Tooltip.astro';
+import SectionHeading from '@/components/SectionHeading.astro';
+import PageNavStrip from '@/components/PageNavStrip.astro';
+import IconSiAmazonwebservices from '~icons/simple-icons/amazonwebservices';
+import IconMdiShieldAccount from '~icons/mdi/shield-account';
+import IconSiTerraform from '~icons/simple-icons/terraform';
+import IconSiKubernetes from '~icons/simple-icons/kubernetes';
+import IconSiGit from '~icons/simple-icons/git';
+import IconMdiInformation from '~icons/mdi/information-outline';
+
+This batch covers everything you need in place before the first resource gets created.
+Work through each section in order — they build on each other.
+
+## Toolchain — what we use and why
+
+The walkthrough assumes a specific toolchain. Here’s what we use and the reasoning behind each choice so you can decide if it fits your context or what to swap.
+
+<PageNavStrip>
+  <li class="nav-icon-aws">
+    <a href="#aws-account">
+      <IconSiAmazonwebservices /> AWS account
+    </a>
+  </li>
+  <li class="nav-icon-iam">
+    <a href="#iam-identity-center">
+      <IconMdiShieldAccount /> IAM Identity Center
+    </a>
+  </li>
+  <li class="nav-icon-aws">
+    <a href="#aws-cli">
+      <IconSiAmazonwebservices /> AWS CLI
+    </a>
+  </li>
+  <li class="nav-icon-terraform">
+    <a href="#infrastructure-as-code--terraform">
+      <IconSiTerraform /> Terraform
+    </a>
+  </li>
+  <li class="nav-icon-kubernetes">
+    <a href="#kubectl">
+      <IconSiKubernetes /> kubectl
+    </a>
+  </li>
+  <li class="nav-icon-git">
+    <a href="#git-and-the-git-cli">
+      <IconSiGit /> Git
+    </a>
+  </li>
+  <li class="nav-icon-info">
+    <a href="#what-else-to-have-in-mind">
+      <IconMdiInformation /> What else
+    </a>
+  </li>
+</PageNavStrip>
+
+<SectionHeading id="aws-account" title="AWS account" iconClass="heading-icon-aws">
+  <IconSiAmazonwebservices slot="icon" />
+</SectionHeading>
+
+<Badge text="Required" variant="tip" size="small" /> You need an <Tooltip term="aws" /> account with
+permissions to create and manage a <Tooltip term="vpc" />, <Tooltip term="eks" /> cluster, node
+groups, and related resources (broad admin or scoped <Tooltip term="iam" />
+).
+
+<Aside type="tip" title="Prefer IAM over root">
+  Use a dedicated IAM user or role with least privilege. Configure credentials in
+  [Prerequisites](/aws-eks-walkthrough/foundations/prerequisites/).
+</Aside>
+
+<SectionHeading id="iam-identity-center" title="IAM Identity Center" iconClass="heading-icon-iam">
+  <IconMdiShieldAccount slot="icon" />
+</SectionHeading>
+
+<Badge text="Recommended / Required for ArgoCD" variant="tip" size="small" />
+<Tooltip term="iam-identity-center" label="IAM Identity Center" /> (formerly AWS SSO) — centralised
+access, <Tooltip term="sso" label="SSO" />, and short-lived credentials instead of long-lived keys.
+
+- **Best practice** for your own access to AWS.
+- **Required for Platform batch:** <Tooltip term="argocd" label="ArgoCD" /> uses <Tooltip term="oidc" label="OIDC" /> + IAM Identity Center for temporary Git sync credentials (no static keys).
+- Set up or confirm in [Prerequisites](/aws-eks-walkthrough/foundations/prerequisites/); we use it again when configuring ArgoCD.
+
+<SectionHeading id="aws-cli" title="AWS CLI" iconClass="heading-icon-aws">
+  <IconSiAmazonwebservices slot="icon" />
+</SectionHeading>
+
+The AWS <Tooltip term="cli" label="CLI" /> is how you authenticate to AWS from your machine.
+
+- **Terraform** uses your credentials (`aws configure` or env) to create resources.
+- **Ad-hoc checks** — describe VPCs, EKS clusters, etc.
+- **kubectl/EKS** — `aws eks update-kubeconfig` writes your local kubeconfig.
+
+Required even though most creation happens via Terraform.
+
+<SectionHeading id="infrastructure-as-code--terraform" title="Infrastructure as Code — Terraform" iconClass="heading-icon-terraform">
+  <IconSiTerraform slot="icon" />
+</SectionHeading>
+
+All infrastructure is defined and applied with Terraform (no manual console creation except where we say so). Terraform gives you:
+
+- **Declarative config** — desired state in code; changes are reviewable and repeatable.
+- **State** — tracks what it created so it can update and destroy safely.
+- **AWS and Kubernetes** — AWS provider for VPC, EKS, IAM, etc.; add <Tooltip term="kubernetes" label="Kubernetes" /> provider for post-create config if needed.
+- **Widely used** — easy to find examples and reuse in real projects.
+
+<SectionHeading id="kubectl" title="kubectl" iconClass="heading-icon-kubernetes">
+  <IconSiKubernetes slot="icon" />
+</SectionHeading>
+
+<Tooltip term="kubectl" label="kubectl" /> is the standard client for any Kubernetes cluster,
+including EKS.
+
+- **After cluster is up:** verify control plane, list nodes.
+- **Later batches:** deploy and inspect workloads.
+- EKS gives you a managed control plane; kubectl remains the primary client.
+
+<SectionHeading id="git-and-the-git-cli" title="Git and the Git CLI" iconClass="heading-icon-git">
+  <IconSiGit slot="icon" />
+</SectionHeading>
+
+Git is used to clone the Terraform repo and (if you do the full walkthrough) to work with app and GitOps repos.
+
+- **Infra** — separate repo so you can version and reuse it.
+- **Platform batch** — ArgoCD syncs cluster state from Git; GitOps is covered there.
+
+<SectionHeading id="what-else-to-have-in-mind" title="What else to have in mind">
+  <IconMdiInformation slot="icon" />
+</SectionHeading>
+
+- **Region** — Pick an AWS region and stick to it for the walkthrough (e.g. `ap-southeast-6`). Commands and Terraform use a default region once configured.
+- **Terraform state** — The Prerequisites use local state. For real use you’d move to remote state (e.g. <Tooltip term="s3" label="S3" /> + <Tooltip term="dynamodb" label="DynamoDB" />) so multiple people or CI can run Terraform safely; we keep it simple here.
+- **Cost** — EKS, <Tooltip term="nat" label="NAT Gateway" />, and nodes incur cost. Tear down when you’re done (`terraform destroy`) and follow AWS best practices for accounts and billing.
+
+<Aside type="caution" title="Cost and cleanup">
+  Remember to run <code>terraform destroy</code> when you’re finished so you don’t leave EKS, NAT
+  gateways, or nodes running. Check the AWS billing console if unsure.
+</Aside>
+
+---
+
+When you’re ready, go through the checklist and steps in **Prerequisites** to install and configure the tools, then continue to **Networking** to build the VPC.
+
+<CardGrid>
+  <LinkCard
+    title="Prerequisites"
+    href="/aws-eks-walkthrough/foundations/prerequisites/"
+    description="Tools, AWS account, and permissions checklist."
+  />
+</CardGrid>

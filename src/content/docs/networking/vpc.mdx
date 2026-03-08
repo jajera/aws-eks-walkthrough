@@ -1,0 +1,163 @@
+---
+title: VPC
+description: Create the VPC, subnets, and NAT gateway that will host the EKS cluster.
+sidebar:
+  label: VPC
+---
+
+import { Steps, Aside, Tabs, TabItem, FileTree, Badge } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import Checklist from '@/components/Checklist.astro';
+import Tooltip from '@/components/Tooltip.astro';
+
+<Aside type="note">
+  Terraform code: [aws-eks-terraform](https://github.com/jajera/aws-eks-terraform). Clone it and
+  follow along — all resources in this section live under `modules/vpc/`.
+</Aside>
+
+<Aside type="tip">
+  New to VPCs, subnets, or EKS subnet tags? Read [Networking
+  concepts](/aws-eks-walkthrough/networking/concepts/) first. This page focuses on the build.
+</Aside>
+
+<Checklist
+  id="networking-vpc"
+  items={[
+    'VPC created with DNS hostnames enabled',
+    'Public subnets created (one per AZ)',
+    'Private subnets created (one per AZ)',
+    'Internet Gateway attached',
+    'NAT Gateway provisioned',
+    'Route tables configured',
+    'Subnet tags applied for EKS discovery',
+    'EKS API endpoint set to Public + Private',
+  ]}
+/>
+
+## Overview
+
+The <Tooltip term="vpc" /> is the network boundary for the entire cluster.
+EKS worker nodes run in **private subnets** and reach the internet through a <Tooltip term="nat" />.
+Public subnets host the NAT Gateway and any public-facing load balancers.
+See [Networking concepts](/aws-eks-walkthrough/networking/concepts/) for why each piece exists.
+
+## Repository layout
+
+<FileTree>
+  - modules/ - vpc/ - **main.tf** VPC, subnets, IGW, NAT, and route tables - variables.tf -
+  outputs.tf - walkthrough/ - main.tf Entry point — calls the vpc module - variables.tf -
+  terraform.tfvars.example Copy to terraform.tfvars and fill in values
+</FileTree>
+
+## Steps
+
+<Steps>
+
+1.  **Initialise Terraform.** <Badge text="Required" variant="tip" size="small" />
+
+    ```bash frame="terminal" title="walkthrough/"
+    terraform init
+    ```
+
+2.  **Create the VPC.** <Badge text="Required" variant="tip" size="small" />
+
+    ```hcl title="modules/vpc/main.tf"
+    resource "aws_vpc" "main" {
+      cidr_block           = var.cidr
+      enable_dns_support   = true
+      enable_dns_hostnames = true
+
+      tags = merge(var.tags, { Name = var.name })
+    }
+    ```
+
+    <Aside type="tip">
+      `enable_dns_hostnames = true` is required so EKS nodes can resolve the API server endpoint by
+      hostname. See [VPC basics](/aws-eks-walkthrough/networking/concepts/#vpc-basics) for details.
+    </Aside>
+
+3.  **Create public and private subnets.** <Badge text="Required" variant="tip" size="small" />
+
+    Spread subnets across three Availability Zones (as in the [concepts diagram](/aws-eks-walkthrough/networking/concepts/#availability-zones)) for high availability.
+    EKS requires subnet tags so it can discover them — see [EKS subnet tags](/aws-eks-walkthrough/networking/concepts/#eks-subnet-tags-and-dns) for why each tag is needed.
+
+    This walkthrough uses `/24` for private subnets (matching the [diagram](/aws-eks-walkthrough/networking/concepts/#vpc-basics)); see [VPC CNI and IP planning](/aws-eks-walkthrough/networking/concepts/#vpc-cni-and-ip-address-planning) for larger clusters.
+    See [VPC CNI and IP address planning](/aws-eks-walkthrough/networking/concepts/#vpc-cni-and-ip-address-planning).
+
+    ```hcl title="modules/vpc/main.tf" {7-11,20-24}
+    resource "aws_subnet" "public" {
+      for_each          = var.public_subnets
+      vpc_id            = aws_vpc.main.id
+      cidr_block        = each.value.cidr
+      availability_zone = each.value.az
+
+      tags = merge(var.tags, {
+        Name                                        = each.key
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        "kubernetes.io/role/elb"                    = "1"
+      })
+    }
+
+    resource "aws_subnet" "private" {
+      for_each          = var.private_subnets
+      vpc_id            = aws_vpc.main.id
+      cidr_block        = each.value.cidr
+      availability_zone = each.value.az
+
+      tags = merge(var.tags, {
+        Name                                        = each.key
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        "kubernetes.io/role/internal-elb"           = "1"
+      })
+    }
+    ```
+
+4.  **Attach an Internet Gateway and NAT Gateway.** <Badge text="Required" variant="tip" size="small" />
+
+    ```hcl title="modules/vpc/main.tf"
+    resource "aws_internet_gateway" "main" {
+      vpc_id = aws_vpc.main.id
+      tags   = merge(var.tags, { Name = var.name })
+    }
+
+    resource "aws_eip" "nat" {}
+
+    resource "aws_nat_gateway" "main" {
+      allocation_id = aws_eip.nat.id
+      subnet_id     = values(aws_subnet.public)[0].id
+      tags          = merge(var.tags, { Name = var.name })
+    }
+    ```
+
+5.  **Apply and verify.** <Badge text="Required" variant="tip" size="small" />
+
+    ```bash frame="terminal"
+    terraform apply
+    ```
+
+    <Tabs syncKey="tool">
+  <TabItem label="Terraform output">
+    ```bash frame="terminal"
+    terraform output vpc_id
+    terraform output private_subnet_ids
+    ```
+  </TabItem>
+  <TabItem label="AWS CLI">
+    ```bash frame="terminal"
+    aws ec2 describe-vpcs \
+      --filters "Name=tag:Name,Values=eks-vpc" \
+      --query "Vpcs[*].{ID:VpcId,CIDR:CidrBlock,State:State}"
+    ```
+
+        Verify subnet tags are applied:
+
+        ```bash frame="terminal"
+        aws ec2 describe-subnets \
+          --filters "Name=tag:kubernetes.io/cluster/eks-walkthrough,Values=shared" \
+          --query "Subnets[*].{ID:SubnetId,CIDR:CidrBlock,AZ:AvailabilityZone,Tags:Tags}"
+        ```
+
+      </TabItem>
+</Tabs>
+
+</Steps>

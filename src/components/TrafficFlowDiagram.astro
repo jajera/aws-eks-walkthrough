@@ -1,0 +1,11 @@
+---
+/**
+ * Inlines the EKS traffic flow SVG so page CSS can target it for dark mode.
+ * Use in docs instead of <Image> when the SVG must respect data-theme.
+ */
+import trafficFlowSvg from '@/assets/networking/eks-traffic-flow.svg?raw';
+---
+
+<div class="theme-aware-diagram not-content" role="img" aria-label="Traffic flow: Internet, gateway, public and private subnets, NAT, EKS nodes and pods">
+  <Fragment set:html={trafficFlowSvg} />
+</div>

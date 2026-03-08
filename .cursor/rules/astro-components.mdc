@@ -1,0 +1,135 @@
+---
+description: Which Astro Starlight component to use in which situation. Anti-patterns and aliases for this project.
+globs:
+  - "src/**/*.mdx"
+  - "src/**/*.astro"
+alwaysApply: false
+---
+
+# Astro Components
+
+## Component decision table
+
+| Situation | Component | Notes |
+| --------- | --------- | ----- |
+| Ordered multi-step procedure | `<Steps>` | Visual numbers; order is not tied to file naming |
+| Info / supplemental note | `<Aside type="note">` | Blue |
+| Helpful shortcut or recommendation | `<Aside type="tip">` | Green |
+| Something that can go wrong | `<Aside type="caution">` | Yellow |
+| Destructive or irreversible action | `<Aside type="danger">` | Red |
+| Tool / OS alternatives | `<Tabs syncKey="tool"> + <TabItem>` | Use `syncKey="tool"` across a page so tabs stay in sync. **When inside `<Steps>`:** indent step content 3 spaces, `<TabItem>` 5 spaces, tab body 6 spaces — see docs-pattern.mdc “JSX inside list items”. |
+| Directory or file tree | `<FileTree>` | Bold file names for key files; use `…` for omitted items |
+| Step tag (Required / Optional) | `<Badge>` inline | `size="small"` keeps it from overwhelming the step label |
+| Section landing navigation | `<CardGrid> + <Card>` | Use `stagger` prop on the intro page |
+| Cross-section navigation link | `<LinkCard>` | Use at the bottom of section overview pages |
+| Call-to-action button | `<LinkButton>` | `variant="primary"` or `"secondary"` |
+| Image or screenshot | `<Image>` from `astro:assets` | Always import from `src/assets/<section>/` via `@/` alias |
+| Diagram (SVG, theme-aware) | Component that inlines SVG + wrapper `theme-aware-diagram` | Use a wrapper with class `theme-aware-diagram`; global CSS in `splash-overrides.css` makes fill/stroke follow theme. No per-diagram CSS. See “Theme-aware diagrams” below. |
+| AWS/K8s term with definition | `<Tooltip term="...">` | Backed by `src/data/glossary.ts`; never inline definitions |
+| Code imported from a file | `<Code code={raw} lang="hcl" title="...">` | Use Vite `?raw` suffix to import |
+| Progress tracker | `<Checklist id="..." items={[...]} />` | `id` = `<section>-<page>`, unique site-wide |
+| Section heading with icon | `<SectionHeading id="..." title="..." iconClass="heading-icon-*">` | Optional `iconClass` applies brand color to the icon; see “Icons (brand colors)” below |
+| Horizontal “on this page” nav | `<PageNavStrip>` + `<li class="nav-icon-*">` | Use `nav-icon-*` classes so strip icons get brand colors; see below |
+
+## Icons (brand colors)
+
+Foundations and other pages that list the toolchain use **brand-colored icons** so each tool is visually distinct.
+
+- **Icon set:** Use **Simple Icons** (`~icons/simple-icons/<slug>`) where a brand exists; use **MDI** (`~icons/mdi/<name>`) for the rest.
+- **Simple Icons slugs:** `amazonwebservices`, `terraform`, `kubernetes`, `git`. No Simple Icons for IAM Identity Center or generic “What else” — use MDI (`shield-account`, `information-outline`).
+- **PageNavStrip:** Each `<li>` must have a class so the strip can color the icon. Use: `nav-icon-aws`, `nav-icon-iam`, `nav-icon-terraform`, `nav-icon-kubernetes`, `nav-icon-git`. “What else” can use `nav-icon-info` (no color rule; inherits text color).
+- **SectionHeading:** When the section has a brand icon, pass `iconClass="heading-icon-aws"` (or `heading-icon-iam`, `heading-icon-terraform`, `heading-icon-kubernetes`, `heading-icon-git`) so the heading icon uses the same brand color. Omit `iconClass` for default (inherit) color.
+- **Brand colors** (defined in `PageNavStrip.astro` and `SectionHeading.astro`): AWS `#ff9900`, IAM `#14b8a6`, Terraform `#7b42bc`, Kubernetes `#326ce5`, Git `#f05032`. Add new colors in both components if you introduce a new brand icon class.
+
+When adding a new tool/section that has a Simple Icons brand, add the corresponding `nav-icon-*` and `heading-icon-*` class and color in both `PageNavStrip.astro` and `SectionHeading.astro`.
+
+## Import statement
+
+Always use the named import from the Starlight package:
+
+```mdx
+import {
+  Steps, Aside, Tabs, TabItem,
+  FileTree, Badge, Card, CardGrid,
+  LinkCard, LinkButton, Icon,
+} from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import Checklist from '@/components/Checklist.astro';
+import Tooltip from '@/components/Tooltip.astro';
+```
+
+Only import what is actually used on the page.
+
+For **brand-colored icons** (e.g. Foundations toolchain), import from `~icons/simple-icons/<slug>` or `~icons/mdi/<name>`:
+
+```mdx
+import IconSiAmazonwebservices from '~icons/simple-icons/amazonwebservices';
+import IconSiTerraform from '~icons/simple-icons/terraform';
+import IconMdiShieldAccount from '~icons/mdi/shield-account';
+```
+
+Requires `@iconify-json/mdi` and `@iconify-json/simple-icons` as dev dependencies.
+
+## Theme-aware diagrams
+
+Diagrams that use white background (`#ffffff`) and black text/strokes (`#000000`) should work in both light and dark mode without editing each SVG.
+
+- **Pattern:** Inline the SVG (e.g. via a component that uses `?raw` import and `<Fragment set:html={svgContent} />`) inside a wrapper with class **`theme-aware-diagram`**. Do not add `<style>` or theme logic inside the SVG file.
+- **Global CSS** in `src/styles/splash-overrides.css` already targets `.theme-aware-diagram svg [fill="#ffffff"]`, `[fill="#000000"]`, and `[stroke="#000000"]` and maps them to `var(--sl-color-background)` and `var(--sl-color-text)`. Any new diagram that follows this convention (wrapper class + inlined SVG) gets theme support automatically.
+- **Example:** `VpcDiagram.astro` imports `eks-vpc-subnet-layout.svg?raw`, wraps it in `<div class="theme-aware-diagram">`, and inlines it. For another diagram, create a similar component (or reuse a generic one) and use the same wrapper class.
+
+## Path alias
+
+Always use `@/` to reference files inside `src/`:
+
+```ts
+import diagram from '@/assets/networking/vpc-diagram.png';
+import { glossary } from '@/data/glossary';
+import Checklist from '@/components/Checklist.astro';
+```
+
+Never use relative `../../` paths for project-internal imports.
+
+## `not-content` class
+
+Apply `class="not-content"` to the root element of any custom Astro component (e.g. `Checklist`, `Tooltip`) to prevent Starlight's default prose styles from leaking into the component. Both custom components in this project already do this.
+
+## Anti-patterns — never do these
+
+- **Do not use raw HTML** (`<div>`, `<span>`, `<table>`) directly in `.mdx` files. Use Starlight components or create a new `.astro` component.
+- **Do not use inline styles** on Starlight components. Use CSS custom properties (`var(--sl-color-*)`) in component `<style>` blocks.
+- **Do not override Starlight's default theme CSS** with `!important` or direct element selectors. Use `customCss` in `astro.config.mjs` only when absolutely necessary. Theme overrides live in `src/styles/splash-overrides.css`: caution Aside and terminal-style code blocks are tuned there for clearer contrast (amber caution box, softer code frame); add or adjust overrides in that file rather than scattering styles.
+- **Do not number file names** (`01-vpc.mdx`, `02-subnets.mdx`). Sidebar order lives in `astro.config.mjs`.
+- **Do not write term definitions inline** in page content. Always add the term to `src/data/glossary.ts` and use `<Tooltip>`.
+- **Do not commit `.tfvars` files** or any file containing secrets.
+
+## Expressive Code (fenced code blocks)
+
+Use these attributes on fenced code blocks — they require no import:
+
+| Attribute | Example | Effect |
+| --------- | ------- | ------ |
+| `title=` | ` ```hcl title="modules/vpc/main.tf" ` | File name tab |
+| `frame="terminal"` | ` ```bash frame="terminal" ` | Terminal window frame |
+| `{lines}` | ` ```hcl {3-5} ` | Line highlighting |
+| `ins=` / `del=` | ` ```hcl ins={4} del={3} ` | Diff per-line |
+| ` ```diff lang="hcl" ` | `+ new line` / `- old line` | Full diff block |
+
+## Adding a new glossary term
+
+1. Open `src/data/glossary.ts`.
+2. Add `termkey: 'Term — definition sentence.'` to the record (lowercase key).
+3. Use `<Tooltip term="termkey" />` on any page that references it. Add `label="Proper Case"` when the default (uppercase key) is wrong, e.g. `<Tooltip term="iam-identity-center" label="IAM Identity Center" />`.
+4. Do not define the term anywhere else.
+
+## Adding a new section batch
+
+1. Create `src/content/docs/<section>/index.mdx` and sub-pages with `draft: true`.
+2. Create `src/assets/<section>/` for images.
+3. Do NOT add the section to the `sidebar` in `astro.config.mjs` yet — draft pages cause build errors if referenced in the sidebar.
+4. When the batch is ready to publish: remove `draft: true` from all pages, then uncomment or add the section group in `astro.config.mjs`.
+5. Add a `badge: { text: 'Start here', variant: 'tip' }` on the first batch; subsequent batches can use a simple label.
+
+---
+
+_Update this rule when a new convention is adopted._

@@ -1,0 +1,111 @@
+---
+title: Git
+description: Install Git, configure your identity, and clone the Terraform infrastructure repo so it is ready for the Networking batch.
+sidebar:
+  label: Git
+---
+
+import { Steps, Aside, Tabs, TabItem, Badge } from '@astrojs/starlight/components';
+import Checklist from '@/components/Checklist.astro';
+
+<Checklist
+  id="prereq-git"
+  items={[
+    'Git installed',
+    'user.name and user.email configured globally',
+    'Terraform repo cloned locally',
+  ]}
+/>
+
+Git is used throughout this walkthrough to clone the Terraform infrastructure repo and, in the Platform batch, to work with GitOps manifests that ArgoCD syncs to the cluster. Install it, set your identity, and clone the infra repo before moving to the Networking batch.
+
+<Steps>
+
+1. **Install Git.** <Badge text="Required" variant="tip" size="small" />
+
+   <Tabs syncKey="os">
+     <TabItem label="macOS">
+      macOS ships with a system Git, but Homebrew's version is kept up to date:
+
+      ```bash frame="terminal"
+      brew install git
+      ```
+     </TabItem>
+     <TabItem label="Linux">
+      ```bash frame="terminal"
+      sudo apt-get update && sudo apt-get install -y git
+      ```
+     </TabItem>
+   </Tabs>
+
+   Verify:
+
+   ```bash frame="terminal"
+   git --version
+   ```
+
+2. **Configure your identity.**
+
+   Git requires a name and email for commits. This matters if you push any changes later (e.g. to your own fork of the Terraform repo or a GitOps repo).
+
+   ```bash frame="terminal"
+   git config --global user.name "Your Name"
+   git config --global user.email "you@example.com"
+   ```
+
+   Confirm the settings:
+
+   ```bash frame="terminal"
+   git config --global --list
+   ```
+
+3. **Clone the Terraform infrastructure repo.** <Badge text="Required" variant="tip" size="small" />
+
+   The Terraform code for this walkthrough lives in a separate repository. Clone it into your workspace directory.
+
+   <Aside type="note">
+     Repository: [aws-eks-terraform](https://github.com/jajera/aws-eks-terraform). This is where all the VPC, EKS, and node group Terraform modules live.
+   </Aside>
+
+   ```bash frame="terminal"
+   cd ~/workspace
+   git clone https://github.com/jajera/aws-eks-terraform.git
+   cd aws-eks-terraform
+   ```
+
+   Confirm the clone worked:
+
+   ```bash frame="terminal"
+   ls
+   ```
+
+   You should see directories like `modules/`, `walkthrough/`, and files like `README.md`.
+
+4. **Optional: use SSH instead of HTTPS.**
+
+   If you have an SSH key configured with GitHub, use SSH to avoid entering your credentials on every `git pull`:
+
+   ```bash frame="terminal"
+   git clone git@github.com:jajera/aws-eks-terraform.git
+   ```
+
+   To set up an SSH key: [GitHub docs — generating a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
+
+5. **Verify the remote.**
+
+   ```bash frame="terminal"
+   git remote -v
+   ```
+
+   Expected output:
+
+   ```
+   origin  https://github.com/jajera/aws-eks-terraform.git (fetch)
+   origin  https://github.com/jajera/aws-eks-terraform.git (push)
+   ```
+
+</Steps>
+
+## Next step
+
+Continue to [What else](/aws-eks-walkthrough/foundations/prerequisites/what-else/) for region, cost, and Terraform state considerations before starting infrastructure.
