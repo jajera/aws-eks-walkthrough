@@ -12,6 +12,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'AWS EKS Walkthrough',
+      favicon: '/favicon.svg',
       description:
         'Build Amazon EKS from scratch: VPC, networking, cluster, and platform components.',
       plugins: [starlightThemeVintage()],
