@@ -5,7 +5,7 @@ sidebar:
   label: VPC
 ---
 
-import { Steps, Aside, Tabs, TabItem, FileTree, Badge } from '@astrojs/starlight/components';
+import { Steps, Aside, FileTree, Badge } from '@astrojs/starlight/components';
 import { Image } from 'astro:assets';
 import Checklist from '@/components/Checklist.astro';
 import Tooltip from '@/components/Tooltip.astro';
@@ -135,29 +135,9 @@ See [Networking concepts](/aws-eks-walkthrough/networking/concepts/) for why eac
     terraform apply
     ```
 
-    <Tabs syncKey="tool">
-  <TabItem label="Terraform output">
     ```bash frame="terminal"
     terraform output vpc_id
     terraform output private_subnet_ids
     ```
-  </TabItem>
-  <TabItem label="AWS CLI">
-    ```bash frame="terminal"
-    aws ec2 describe-vpcs \
-      --filters "Name=tag:Name,Values=eks-vpc" \
-      --query "Vpcs[*].{ID:VpcId,CIDR:CidrBlock,State:State}"
-    ```
-
-        Verify subnet tags are applied:
-
-        ```bash frame="terminal"
-        aws ec2 describe-subnets \
-          --filters "Name=tag:kubernetes.io/cluster/eks-walkthrough,Values=shared" \
-          --query "Subnets[*].{ID:SubnetId,CIDR:CidrBlock,AZ:AvailabilityZone,Tags:Tags}"
-        ```
-
-      </TabItem>
-</Tabs>
 
 </Steps>
